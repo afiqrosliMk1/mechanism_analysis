@@ -43,28 +43,60 @@ for i = 1:N
     xP(:, i) = FindPos(xB(:, i), p, e3); 
 end
 
-plot(xB(1, :), xB(2, :))
+loop = true;
+
+fig = figure;
 hold on
-plot(xP(1, :), xP(2, :))
-axis equal
 grid on
+%plot path B and P
+plot(xB(1, :), xB(2, :));
+plot(xP(1, :), xP(2, :));
+axis equal
+xlim([-0.4, 0.4]);
+ylim([-0.15, 0.15]);
 
 title('Paths of points B and P on the Threebar Linkage')
 xlabel('x-position [m]')
 ylabel('y-position [m]')
-legend('Point B', 'Point P', 'Location', 'southeast')
+legend('Point B', 'Point P', 'Location', 'eastoutside')
 
-%draw linkage
-x = [x0(1), xB(1, 80), xP(1, 80)];
-y = [x0(2), xB(2, 80), xP(2, 80)];
-plot(x, y, LineWidth=2, Color='k');
+%initialise linkage plot 
+x = [x0(1), xB(1, 1), xP(1, 1)];
+y = [x0(2), xB(2, 1), xP(2, 1)];
+%handle visibility=off prevents h1 from being added to the legend
+h1 = plot(x, y, LineWidth=2, Color='k', HandleVisibility='off');
 
-%draw linkage joint
-plot([x0(1), xD(1), xB(1, 80), xP(1, 80)], [x0(2), xD(2), xB(2, 80),...
-    xP(2, 80)], 'o', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
+%initialise pin joint
+h2 = plot([x0(1), xD(1), xB(1, 1), xP(1, 1)], [x0(2), xD(2), xB(2, 1),...
+        xP(2, 1)], 'o', 'MarkerSize', 5, 'MarkerFaceColor', 'b', HandleVisibility='off');
 
-%draw labels on each pin joint
-text(x0(1) - 0.015, x0(2), 'A', HorizontalAlignment='center')
-text(xB(1, 80) - 0.015, xB(2, 80), 'B', HorizontalAlignment='center')
-text(xD(1) - 0.015, xD(2), 'D', HorizontalAlignment='center')
-text(xP(1, 80) - 0.015, xP(2, 80), 'P', HorizontalAlignment='center')
+%initialise text object
+tA = text(x0(1) - 0.015, x0(2), 'A', HorizontalAlignment='center');
+tB = text(xB(1, 1) - 0.015, xB(2, 1) - 0.015, 'B', HorizontalAlignment='center', VerticalAlignment='middle');
+tD = text(xD(1) - 0.015, xD(2), 'D', HorizontalAlignment='center');
+tP = text(xP(1, 1) - 0.015, xP(2, 1), 'P', HorizontalAlignment='center');
+
+j = 1;
+while j <= N
+    %avoid erratic behaviour if we click X to close plot
+    if ~ishandle(fig)
+        break
+    end
+
+    %update linkage position
+    set(h1, "XData", [x0(1), xB(1, j), xP(1, j)], "YData", [x0(2), xB(2, j), xP(2, j)]);
+    set(h2, "XData", [x0(1), xD(1), xB(1, j), xP(1, j)], "YData", [x0(2), xD(2), xB(2, j), xP(2, j)]);
+
+    %update labels position
+    set(tB, 'Position', [xB(1, j) - 0.015, xB(2, j) - 0.015, 0])
+    set(tP, 'Position', [xP(1, j) - 0.015, xP(2, j) - 0.015, 0])
+
+    drawnow
+
+    j = j + 1;
+    if j == N & loop == true
+        j = 1;
+    end
+
+
+end

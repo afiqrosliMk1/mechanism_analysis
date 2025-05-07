@@ -8,5 +8,5 @@
 % x  = position of second point on the link
 
 function x = FindPos(x0, L, e)
-
-x = x0 + L * e;
+    x = x0 + L * e;
+end

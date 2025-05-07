@@ -6,6 +6,6 @@
 % n     = unit normal to the vector e
 
 function [e, n] = UnitVector(theta)
-
-e = [ cos(theta); sin(theta) ];
-n = [-sin(theta); cos(theta) ];
+    e = [ cos(theta); sin(theta) ];
+    n = [-sin(theta); cos(theta) ];
+end

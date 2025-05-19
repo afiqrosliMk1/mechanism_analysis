@@ -9,12 +9,12 @@
 % prepare workspace
 clear variables; close all; clc;
 % crank length (m)
-a = 0.17;
+%a = 0.13;
+a = 0.22;
 % coupler length (m)
 b = 0.2;
 % rocker length (m)
-%c = 0.13; 
-c = 0.22;
+c = 0.17;
 % ground link length (m)
 %d = 0.22;
 d = 0.13;
@@ -84,7 +84,13 @@ f = 0;
 g = 0;
 h = 0;
 x0 = [0; 0];
-xD = [-d; 0];
+if class == 2 || class == 1
+    xD = [d; 0];
+elseif class == 4
+    xD = [-d; 0];
+else
+    fprintf("warning, xD not defined\n")
+end
 xB = zeros(2, N);
 xC = zeros(2, N);
 xP = zeros(2, N);
@@ -99,7 +105,7 @@ for i = 1:N
         theta2(i) = -1 * (i - 1) * (2*pi - (theta2_max - theta2_min)) / (N - 1) + theta2_min;
     end
   
-    if class == 2
+    if class == 2 || class == 1
         r = d - a * cos(theta2(i));
         s = a * sin(theta2(i));
     elseif class == 4
@@ -113,7 +119,7 @@ for i = 1:N
     f = sqrt(r^2 + s^2);
     
     % open configuration
-    if class == 2
+    if class == 2 || class == 1
         cos_val = (b^2 + c^2 - f^2) / (2*b*c);
     elseif class == 4
         cos_val = (a^2 + b^2 - f^2) / (2*a*b);
@@ -124,7 +130,7 @@ for i = 1:N
     cos_val = min(1, max(-1, cos_val));   
     delta = acos(cos_val);
     
-    if class == 2
+    if class == 2 || class == 1
         g = b - c * cos(delta);
         h = c * sin(delta);
     elseif class == 4
@@ -132,7 +138,7 @@ for i = 1:N
         h = a * sin(delta);
     end
 
-    if class == 2
+    if class == 2 || class == 1
         theta3(i) = atan2((h*r - g*s), (g*r + h*s));
         theta4(i) = theta3(i) + delta;
     elseif class == 4
@@ -146,15 +152,15 @@ for i = 1:N
     [e3, n3] = UnitVector(theta3(i));
     [e4, n4] = UnitVector(theta4(i));
 
-    if class == 2
+    if class == 2 || class == 1
         [eBP, nBP] = UnitVector(theta3(i) + gamma);
     elseif class == 4
         [eCP, nCP] = UnitVector(theta3(i) - gamma);
     end
 
-    if class == 2
-        xB(:, i) = FindPos(x0, c, e2);
-        xC(:, i) = FindPos(xD, a, e4);
+    if class == 2 || class == 1
+        xB(:, i) = FindPos(x0, a, e2);
+        xC(:, i) = FindPos(xD, c, e4);
         xP(:, i) = FindPos(xB(:, i), p, eBP);
     elseif class == 4
         xB(:, i) = FindPos(xD, a, e4);
@@ -173,7 +179,7 @@ plot(xP(1, :), xP(2, :));
 axis equal
 
 %initialise linkage plot
-if class == 2
+if class == 2 || class == 1
     h1 = plot([x0(1), xB(1, 1), xC(1, 1)], [x0(2), xB(2, 1), xC(2, 1)]);
     h2 = plot([xB(1, 1), xP(1, 1), xC(1, 1)], [xB(2, 1), xP(2, 1), xC(2, 1)]);
     h3 = plot([xD(1), xC(1, 1)], [xD(2), xC(2, 1)]);
@@ -204,7 +210,7 @@ while j <= N
         break
     end
 
-    if class == 2
+    if class == 2 || class == 1
         set(h1, 'XData', [x0(1), xB(1, j), xC(1, j)], 'YData', [x0(2), xB(2, j), xC(2, j)]);
         set(h2, 'XData', [xB(1, j), xP(1, j), xC(1, j)], 'YData', [xB(2, j), xP(2, j), xC(2, j)]);
         set(h3, 'XData', [xD(1), xC(1, j)], 'YData', [xD(2), xC(2, j)]);

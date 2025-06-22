@@ -212,14 +212,18 @@ for i = 1:N
     xG(:, i) = FindPos(xE(:, i), u, eEG);
 end
 
+%define linkage colour
+cBlu = DefineColor([0, 110, 199]);
+cBlk = DefineColor([0, 0, 0]);
+
 % plot path
 fig = figure;
 plot(xB(1, :), xB(2, :));
 hold on
 plot(xC(1, :), xC(2, :));
-plot(xE(1, :), xE(2, :));
-plot(xF(1, :), xF(2, :));
-plot(xG(1, :), xG(2, :));
+plot(xE(1, :), xE(2, :), 'Color', cBlu(1, :));
+plot(xF(1, :), xF(2, :), 'Color', cBlu(7, :));
+plot(xG(1, :), xG(2, :), 'Color', cBlk(5, :));
 axis equal
 xlim([-0.25, 0.25]);
 ylim([-0.25, 0.25]);
@@ -237,11 +241,12 @@ elseif class == 4
     h3 = plot([xD(1), xB(1, 1)], [xD(2), xB(2, 1)]);
 end
 
-%h4 = patch([xB(1, 1), xE(1, 1), xC(1, 1)], [xB(2, 1), xE(2, 1), xC(2, 1)], [0.5, 0.5, 1]);
+h4 = patch([x0(1), xB(1, 1), xE(1, 1)], [x0(2), xB(2, 1), xE(2, 1)], cBlu(9, :), 'FaceAlpha', 0.5);
+h8 = patch([xD(1), xC(1, 1), xF(1, 1)], [xD(2), xC(2, 1), xF(2, 1)], cBlu(10, :), 'FaceAlpha', 0.5);
 
 %initialise joint marker
 h5 = plot([x0(1), xB(1, 1), xC(1, 1), xD(1), xE(1, 1), xF(1, 1), xG(1, 1)], ...
-    [x0(2), xB(2, 1), xC(2, 1), xD(2), xE(2, 1), xF(2, 1), xG(2, 1)], 'o', 'MarkerFaceColor', 'k');
+    [x0(2), xB(2, 1), xC(2, 1), xD(2), xE(2, 1), xF(2, 1), xG(2, 1)], 'o', 'MarkerFaceColor', cBlk(5, :));
 
 %initialise label
 t1 = text(x0(1) + 0.005, x0(2), 0, "A");
@@ -277,7 +282,8 @@ while j <= N
     'YData', [x0(2), xB(2, j), xC(2, j), xD(2), xE(2, j), xF(2, j), xG(2, j)])
 
     %update coupler patch
-    %set(h4, 'XData', [xB(1, j), xE(1, j), xC(1, j)], 'YData', [xB(2, j), xE(2, j), xC(2, j)]);
+    set(h4, 'XData', [x0(1), xB(1, j), xE(1, j)], 'YData', [x0(2), xB(2, j), xE(2, j)]);
+    set(h8, 'XData', [xD(1), xC(1, j), xF(1, j)], 'YData', [xD(2), xC(2, j), xF(2, j)]);
     drawnow
 
     %update label position

@@ -26,6 +26,15 @@ b = zeros(1, N); % allocate space for slider length
 xB = zeros(2, N);
 xP = zeros(2, N);
 
+% velocity analysis
+omega2 = 10 ; % rad/s
+omega3 = zeros(1, N);
+bdot = zeros(1, N);
+v0 = [0; 0]; % velocity of point A
+
+vB = zeros(2, N);
+vP = zeros(2, N);
+
 % Main Loop
 for i = 1:N
     %(2*pi)/(N-1) gives you angle per step. 
@@ -41,15 +50,28 @@ for i = 1:N
     %solve for positions of points B and P on the linkage
     xB(:, i) = FindPos(x0, a, e2);
     xP(:, i) = FindPos(xB(:, i), p, e3); 
+
+    %solve for omega3 and bdot
+    A_mat = [b(i)*n3, e3];
+    b_vec = -omega2*a*n2;
+    omega_vec = A_mat\b_vec;
+    omega3(i) = omega_vec(1);
+    bdot(i) = omega_vec(2);
+
+    %solve for point velocity
+    vB(:, i) = FindVel(v0, a, omega2, n2);
+    vP(:, i) = FindVel(vB(:, i), p, omega3(i), n3);
 end
 
 loop = true;
 
-fig = figure;
-hold on
+fig = figure('Units','normalized','Position',[0.2 0.2 0.4 0.4]);
+layout = tiledlayout(2, 1);
+nexttile
 grid on
 %plot path B and P
 plot(xB(1, :), xB(2, :));
+hold on
 plot(xP(1, :), xP(2, :));
 axis equal
 xlim([-0.4, 0.4]);
@@ -76,6 +98,12 @@ tB = text(xB(1, 1) - 0.015, xB(2, 1) - 0.015, 'B', HorizontalAlignment='center',
 tD = text(xD(1) - 0.015, xD(2), 'D', HorizontalAlignment='center');
 tP = text(xP(1, 1) - 0.015, xP(2, 1), 'P', HorizontalAlignment='center');
 
+%plot for velocity
+nexttile
+plot(theta2*180/pi, omega3(1, :));
+xlabel('angle (degree)')
+ylabel('omega3 (rad/s)')
+
 j = 1;
 while j <= N
     %avoid erratic behaviour if we click X to close plot
@@ -97,6 +125,5 @@ while j <= N
     if j == N & loop == true
         j = 1;
     end
-
 
 end

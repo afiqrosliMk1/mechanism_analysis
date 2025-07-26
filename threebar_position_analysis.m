@@ -63,6 +63,14 @@ for i = 1:N
     vP(:, i) = FindVel(vB(:, i), p, omega3(i), n3);
 end
 
+%loop to estimate omega 3 using numerical method
+%---purely just to validate result of analytical vs numerical method-----
+dt = 2*pi/((N-1)*omega2);
+omega3_estimate = FiniteDiffMethod(theta3, dt);
+bdot_estimate = FiniteDiffMethod(b, dt);
+vPx_estimate = FiniteDiffMethod(xP(1, :), dt);
+%-----------
+
 loop = true;
 
 fig = figure('Units','normalized','Position',[0.2 0.2 0.4 0.4]);
@@ -100,9 +108,22 @@ tP = text(xP(1, 1) - 0.015, xP(2, 1), 'P', HorizontalAlignment='center');
 
 %plot for velocity
 nexttile
-plot(theta2*180/pi, omega3(1, :));
+%plot(theta2*180/pi, omega3(1, :));
+%plot(theta2*180/pi, bdot(1, :));
+plot(theta2*180/pi, vP(1, :));
 xlabel('angle (degree)')
-ylabel('omega3 (rad/s)')
+
+%----lines below is for plotting estimated value from numerical method for
+%validating result. can be deleted
+hold on
+%uncomment omega3_estimate or bdot_estimate if you want to see the plot
+%plot(theta2*180/pi, omega3_estimate(1, :));
+%plot(theta2*180/pi, bdot_estimate(1, :));
+plot(theta2*180/pi, vPx_estimate(1, :));
+
+%legend('omega3', 'omega3\_estimate')
+%legend('bdot', 'bdot\_estimate')
+legend('vPx', 'vPx\_estimate')
 
 j = 1;
 while j <= N

@@ -31,6 +31,11 @@ theta3 = zeros(1, N);
 % allocate space for piston position
 d = zeros(1, N);
 
+% velocity analysis
+omega2 = 10; 
+omega3 = zeros(1, N);
+ddot = zeros(1, N);
+
 for i=1:N
     theta2(i) = (i - 1) * 2 * pi / (N - 1);
     theta3(i) = asin((c - a * sin(theta2(i))) / b);
@@ -44,6 +49,13 @@ for i=1:N
     % calculate position of point B and C
     xB(:, i) = FindPos(x0, a, e2);
     xC(:, i) = FindPos(xB(:, i), b, e3);
+
+    % velocity analysis - solve for omega 3 and ddot
+    A_mat = [b*n3, -e1];
+    b_vec = -omega2*a*n2;
+    omega_vec = A_mat\b_vec;
+    omega3(i) = omega_vec(1);
+    ddot(i) = omega_vec(2);
 end
 
 %convert XB and xC into mm
@@ -51,18 +63,32 @@ xB = xB * 1000;
 xC = xC * 1000;
 d = d * 1000;
 
-%make two figures
+%make three figures
 fig1 = figure;
 fig2 = figure;
+fig3 = figure;
 %plot crank angle vs piston location on fig2
+figure(fig2);
 plot(theta2 * 180 / pi, d);
 title('Crank Angle vs Piston Location');
 xlabel('Theta2 (degrees)');
 ylabel('Piston location (mm)');
 grid on
 set(gca, 'xtick', 0:60:360);
-set(fig2, 'Position', [50, 400, 600, 400])
+set(fig2, 'Position', [50, 600, 600, 400])
 xlim([0 360])
+
+%plot velocity vs angle
+figure(fig3);
+plot(theta2(1, :) * 180/pi, ddot(1, :));
+set(fig3, 'Position', [50, 100, 600, 400]);
+xlim([0 360]);
+grid on
+set(gca, 'xtick', 0:60:360);
+xlabel('Theta2 (degrees)');
+ylabel('Piston Velocity (mm/s)');
+title('Crank Angle vs Piston Velocity');
+
 %now explicitly call fig1 so we can start plotting on it
 figure(fig1);
 set(fig1, 'Position', [700, 400, 600, 400])

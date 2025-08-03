@@ -9,15 +9,13 @@
 % prepare workspace
 clear variables; close all; clc;
 % crank length (m)
-%a = 0.13;
-a = 0.22;
+a = 0.13;
 % coupler length (m)
 b = 0.2;
 % rocker length (m)
 c = 0.17;
 % ground link length (m)
-%d = 0.22;
-d = 0.13;
+d = 0.22;
 % length from B to P (m)
 p = 0.150; 
 % angle between BP and coupler (radian)
@@ -95,6 +93,15 @@ xB = zeros(2, N);
 xC = zeros(2, N);
 xP = zeros(2, N);
 
+%store velocity analysis result
+omega2 = 10; %rad/s
+omega3 = zeros(1, N);
+omega4 = zeros(1, N);
+
+v0 = [0; 0]; % velocity at crank pivot
+vB = zeros(2, N);
+vP = zeros(2, N);
+
 % main loop
 for i = 1:N
     if ccw == true
@@ -168,10 +175,42 @@ for i = 1:N
         xP(:, i) = FindPos(xC(:, i), p, eCP);
     end
 
+    % velocity analysis
+    A_matrix = [b*n3, -c*n4];
+    b_vector = -a*omega2*n2;
+    omega_vector = A_matrix \ b_vector;
+    omega3(i) = omega_vector(1);
+    omega4(i) = omega_vector(2);
+
+    %solve for point velocity
+    vB(:, i) = FindVel(v0, a, omega2, n2);
+    vP(:, i) = FindVel(vB(:, i), p, omega3(i), nBP);
+
+    %%%-- finite diff method. purely for validation of velocity result-%%
+    timestep = 2*pi/((N-1)*omega2);
+    vPx_estimated = FiniteDiffMethod(xP(1, :), timestep);
+    vPy_estimated = FiniteDiffMethod(xP(2, :), timestep);
+    omega3_estimated = FiniteDiffMethod(theta3(1, :), timestep);
+    omega4_estimated = FiniteDiffMethod(theta4(1, :), timestep);
+
 end
 
+% plot velocity
+fig2 = figure;
+set(fig2, 'Position', [50, 200, 600, 400])
+
+% --plot below purely to validate the analytical result vs estimated
+% -- change the plot to omega3, omega4 or P as you wish
+plot(theta2*180/pi, vP(1, :));
+hold on
+plot(theta2*180/pi, vPx_estimated, '.');
+legend('analytical', 'estimated', 'Location','best');
+xlim([0, 360]);
+set(gca, 'xtick', 0:60:360)
+
 % plot path
-fig = figure;
+fig1 = figure;
+set(fig1, 'Position', [700, 200, 600, 400])
 plot(xB(1, :), xB(2, :));
 hold on
 plot(xC(1, :), xC(2, :));
@@ -206,7 +245,7 @@ t5 = text(xD(1) + 0.005, xD(2), 0, "D");
 j = 1;
 direction = 1;
 while j <= N
-    if ~isgraphics(fig)
+    if ~isgraphics(fig1)
         break
     end
 

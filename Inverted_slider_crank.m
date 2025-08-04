@@ -5,8 +5,7 @@
 
 % prepare workspace
 clear variables; close all; clc;
-%a = 0.080;               % crank length (m)
-a = 0.1;
+a = 0.080;               % crank length (m)
 c = 0.130;               % rocker length (m)
 d = 0.200;              % ground link length (m)
 p = 0.350;               % length from B to P (m)
@@ -47,6 +46,15 @@ xD = [d; 0];
 xB = zeros(2, N);
 xC = zeros(2, N);
 xP = zeros(2, N);
+
+%variable for velocity analysis
+omega2 = 10; %rad/s
+omega3 = zeros(1, N);
+bdot = zeros(1, N);
+v0 = [0; 0]; %velocity of pin A
+vB = zeros(2, N);
+vP = zeros(2, N);
+
 % main loop
 for i = 1:N
     theta2(i) = (i - 1) * (theta2_max - theta2_min) / (N - 1) + theta2_min;
@@ -73,15 +81,45 @@ for i = 1:N
     xP(:, i) = FindPos(xB(:, i), p, e3);
     xC(:, i) = FindPos(xD, c, e4);
 
+    % velocity analysis
+    A_matrix = [(b(i)*n3 - c*n4), e3];
+    b_vector = -a*omega2*n2;
+    omega_vector = A_matrix\b_vector;
+    omega3(i) = omega_vector(1);
+    bdot(i) = omega_vector(2);
+
+    %calculate point velocity
+    vB(:, i) = FindVel(v0, a, omega2, n2);
+    vP(:, i) = FindVel(vB(:, i), p, omega3(i), n3);
+
 end
 
+%--lines of code below are purely for validation of above point
+%velocity. using finite difference method
+timestep = 2*pi/((N-1)*omega2);
+vPx_estimated = FiniteDiffMethod(xP(1, :), timestep);
+vPy_estimated = FiniteDiffMethod(xP(2, :), timestep);
+
+% plot velocity
+fig2 = figure;
+plot(theta2*180/pi, vP(1, :));
+hold on
+%plot estimated value from finite difference
+plot(theta2*180/pi, vPx_estimated(1, :), '.');
+xlim([0 360]);
+set(gca, 'xtick', 0:60:360)
+set(fig2, 'position', [50, 200, 600, 400])
+xlabel('crank angle (degree)');
+legend('vPx', 'vPx\_estimated')
+
 % plot path
-fig = figure;
+fig1 = figure;
 plot(xB(1, :), xB(2, :));
 hold on
 plot(xC(1, :), xC(2, :));
 plot(xP(1, :), xP(2, :));
 axis equal
+set(fig1, 'position', [700, 200, 600, 400])
 
 %initialise linkage plot
 h1 = plot([x0(1), xB(1, 1), xC(1, 1), xP(1, 1)], [x0(2), xB(2, 1), xC(2, 1), xP(2, 1)]);
@@ -102,7 +140,7 @@ t5 = text(xD(1) + 0.005, xD(2), 0, "D");
 j = 1;
 direction = 1;
 while j <= N
-    if ~isgraphics(fig)
+    if ~isgraphics(fig1)
         break
     end
     set(h1, 'XData', [x0(1), xB(1, j), xC(1, j), xP(1, j)], 'YData', [x0(2), xB(2, j), xC(2, j), xP(2, j)]);

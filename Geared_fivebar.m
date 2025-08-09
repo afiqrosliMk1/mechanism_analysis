@@ -9,8 +9,8 @@ a = 0.120;               % crank length (m)
 b = 0.250;               % coupler 1 length (m)
 c = 0.250;               % coupler 2 length (m)
 d = 0.180;               % ground link length (m)
-u = 0.150;               % length of link on gear 2 (m)
-N1 = 24;                 % number of teeth on gear 1
+u = 0.120;               % length of link on gear 2 (m)
+N1 = 48;                 % number of teeth on gear 1
 N2 = 24;                 % number of teeth on gear 2
 rho = N1/N2;             % gear ratio
 phi = 0;                 % offset angle between gears
@@ -47,6 +47,16 @@ xC = zeros(2, N);
 xP = zeros(2, N);
 xE = zeros(2, N);
 xQ = zeros(2, N);
+
+% variables for velocity analysis
+omega2 = 10; %rad/s
+omega3 = zeros(1, N);
+omega4 = zeros(1, N);
+omega5 = -N1/N2*omega2;
+
+v0 = [0; 0]; %velocity at crank pin
+vB = zeros(2, N); %velocity at point B
+vP = zeros(2, N); %velocity at point P
 
 % main loop
 for i = 1:N 
@@ -85,10 +95,40 @@ for i = 1:N
      xP(:, i) = FindPos(xB(:, i), p, eBP);
      xQ(:, i) = FindPos(xC(:, i), q, eCQ);
 
+     % velocity analysis
+     A_matrix = [b*n3, -c*n4];
+     b_vector = -a*omega2*n2 + u*omega5*n5;
+     omega_matrix = A_matrix \ b_vector;
+     omega3(i) = omega_matrix(1);
+     omega4(i) = omega_matrix(2);
+
+     vB(:, i) = FindVel(v0, a, omega2, n2);
+     vP(:, i) = FindVel(vB(:, i), p, omega3(i), nBP);
+
 end
 
+%numerical estimation of velocity analysis
+timestep = 2*pi/((N-1)*omega2);
+vPx_estimate = FiniteDiffMethod(xP(1, :), timestep);
+vPy_estimate = FiniteDiffMethod(xP(2, :), timestep);
+
+%plot velocity analysis
+fig2 = figure;
+set(fig2, 'Position', [50, 200, 600, 400]);
+plot(theta2*180/pi, vP(1, :));
+hold on
+plot(theta2*180/pi, vP(2, :));
+set(gca, 'xtick', 0:60:360);
+set(gca, 'ytick', -6:1:6);
+xlim([0, 360]);
+%plot the estimated value for validating result
+plot(theta2*180/pi, vPx_estimate, '.');
+plot(theta2*180/pi, vPy_estimate, '.');
+legend('vPx', 'vPy', 'vPx\_estimate', 'vPy\_estimate');
+
 % plot path
-fig = figure;
+fig1 = figure;
+set(fig1, 'Position', [700, 200, 600, 400]);
 % plot(xB(1, :), xB(2, :));
 
 plot(xQ(1, :), xQ(2, :));
@@ -99,7 +139,7 @@ plot(xP(1, :), xP(2, :));
 
 axis equal
 xlim([-0.30, 0.40]);
-ylim([-0.15, 0.25]);
+ylim([-0.15, 0.4]);
 
 %initialise linkage plot
 h1 = plot([x0(1), xB(1, 1), xE(1, 1)], [x0(2), xB(2, 1), xE(2, 1)]);
@@ -126,7 +166,7 @@ t7 = text(xQ(1) + 0.005, xQ(2), 0, "Q");
 % animation loop
 j = 1;
 while j <= N
-    if ~ishandle(fig)
+    if ~ishandle(fig1)
         break
     end
     set(h1, 'XData', [x0(1), xB(1, j), xE(1, j)], 'YData', [x0(2), xB(2, j), xE(2, j)]);
@@ -143,12 +183,14 @@ while j <= N
     set(h7, 'XData', [xC(1, j), xQ(1, j), xE(1, j)], 'YData', [xC(2, j), xQ(2, j), xE(2, j)]);
     drawnow
 
-    %update label position
-    set(t2, 'Position', [xB(1, j) + 0.005, xB(2, j)]);
-    set(t3, 'Position', [xC(1, j) + 0.005, xC(2, j)]);
-    set(t4, 'Position', [xE(1, j) + 0.005, xE(2, j)]);
-    set(t6, 'Position', [xP(1, j) + 0.005, xP(2, j)]);
-    set(t7, 'Position', [xQ(1, j) + 0.005, xQ(2, j)]);
+    %check all text object still exist before update label position
+    if all(isgraphics([t2, t3, t4, t6, t7]))
+        set(t2, 'Position', [xB(1, j) + 0.005, xB(2, j)]);
+        set(t3, 'Position', [xC(1, j) + 0.005, xC(2, j)]);
+        set(t4, 'Position', [xE(1, j) + 0.005, xE(2, j)]);
+        set(t6, 'Position', [xP(1, j) + 0.005, xP(2, j)]);
+        set(t7, 'Position', [xQ(1, j) + 0.005, xQ(2, j)]);
+    end
 
     j = j + 1;
     if j == N & loop == true

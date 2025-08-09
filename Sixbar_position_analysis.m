@@ -115,6 +115,9 @@ omega3 = zeros(1, N);
 omega4 = zeros(1, N);
 omega5 = zeros(1, N);
 omega6 = zeros(1, N);
+v0 = [0; 0]; %velocity of crank pin
+vB = zeros(2, N);
+vE = zeros(2, N);
 
 % for estimated velocity
 omega3_estimated = zeros(1, N);
@@ -239,23 +242,28 @@ for i = 1:N
     omega5(i) = omega_matrix(3, i);
     omega6(i) = omega_matrix(4, i);
 
+    vB(:, i) = FindVel(v0, a, omega2, n2);
+    vE(:, i) = FindVel(v0, p, omega2, nAE);
+
 end
 
 % estimation of omega value using numerical method
 timestep = 2*pi/((N-1)*omega2);
 omega3_estimated = FiniteDiffMethod(theta3, timestep);
 omega4_estimated = FiniteDiffMethod(theta4, timestep);
+vEx_estimated = FiniteDiffMethod(xE(1, :), timestep);
+vEy_estimated = FiniteDiffMethod(xE(2, :), timestep);
 
 % plot velocity 
 fig2 = figure;
-plot(theta2*180/pi, omega3);
+plot(theta2*180/pi, vE(1, :));
 hold on
-plot(theta2*180/pi, omega3_estimated, '.');
+plot(theta2*180/pi, vEx_estimated, '.');
 set(fig2, 'Position', [50, 200, 600, 400]);
 xlim([0 360]);
 set(gca, 'xtick', 0:60:360);
-legend('omega3');
 xlabel('crank angle (degree)');
+legend('vE\git _x', 'vEx\_estimated');
 
 %define linkage colour
 cBlu = DefineColor([0, 110, 199]);

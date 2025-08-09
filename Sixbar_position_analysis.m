@@ -107,6 +107,21 @@ theta6_prime = 0;
 theta5 = zeros(1, N);
 theta6 = zeros(1, N);
 
+% for velocity analysis
+Z21 = [0; 0]; % take the blank location
+omega2 = 10; %rad/s
+omega_matrix = zeros(4, N);
+omega3 = zeros(1, N);
+omega4 = zeros(1, N);
+omega5 = zeros(1, N);
+omega6 = zeros(1, N);
+
+% for estimated velocity
+omega3_estimated = zeros(1, N);
+omega4_estimated = zeros(1, N);
+omega5_estimated = zeros(1, N);
+omega6_estimated = zeros(1, N);
+
 % main loop
 for i = 1:N
     if ccw == true
@@ -210,14 +225,45 @@ for i = 1:N
 
     [eEG, nEG] = UnitVector(theta5(i));
     xG(:, i) = FindPos(xE(:, i), u, eEG);
+
+    % velocity analysis
+    [e5, n5] = UnitVector(theta5(i));
+    [e6, n6] = UnitVector(theta6(i));
+ 
+    A_matrix = [b*n3, -c*n4, Z21, Z21;
+                Z21, -q*nDF, u*n5, -v*n6];
+    b_vector = [-a*omega2*n2; -p*omega2*nAE];
+    omega_matrix(:, i) = A_matrix \ b_vector;
+    omega3(i) = omega_matrix(1, i);
+    omega4(i) = omega_matrix(2, i);
+    omega5(i) = omega_matrix(3, i);
+    omega6(i) = omega_matrix(4, i);
+
 end
+
+% estimation of omega value using numerical method
+timestep = 2*pi/((N-1)*omega2);
+omega3_estimated = FiniteDiffMethod(theta3, timestep);
+omega4_estimated = FiniteDiffMethod(theta4, timestep);
+
+% plot velocity 
+fig2 = figure;
+plot(theta2*180/pi, omega3);
+hold on
+plot(theta2*180/pi, omega3_estimated, '.');
+set(fig2, 'Position', [50, 200, 600, 400]);
+xlim([0 360]);
+set(gca, 'xtick', 0:60:360);
+legend('omega3');
+xlabel('crank angle (degree)');
 
 %define linkage colour
 cBlu = DefineColor([0, 110, 199]);
 cBlk = DefineColor([0, 0, 0]);
 
 % plot path
-fig = figure;
+fig1 = figure;
+set(fig1, 'Position', [700, 200, 600, 400])
 plot(xB(1, :), xB(2, :));
 hold on
 plot(xC(1, :), xC(2, :));
@@ -261,7 +307,7 @@ t7 = text(xG(1, 1) + 0.005, xG(2, 1), 0, "G");
 j = 1;
 direction = 1;
 while j <= N
-    if ~isgraphics(fig)
+    if ~isgraphics(fig1)
         break
     end
 

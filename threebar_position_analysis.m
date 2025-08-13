@@ -35,6 +35,15 @@ v0 = [0; 0]; % velocity of point A
 vB = zeros(2, N);
 vP = zeros(2, N);
 
+% acceleration analyis varibles
+alpha2 = 0; %rad/s/s
+alpha3 = zeros(1, N);
+b_doubledot = zeros(1, N);
+
+a0 = [0; 0];
+aB = zeros(2, N);
+aP = zeros(2, N);
+
 % Main Loop
 for i = 1:N
     %(2*pi)/(N-1) gives you angle per step. 
@@ -51,30 +60,45 @@ for i = 1:N
     xB(:, i) = FindPos(x0, a, e2);
     xP(:, i) = FindPos(xB(:, i), p, e3); 
 
-    %solve for omega3 and bdot
+    %velocity analysis - solve for omega3 and bdot
     A_mat = [b(i)*n3, e3];
     b_vec = -omega2*a*n2;
     omega_vec = A_mat\b_vec;
     omega3(i) = omega_vec(1);
     bdot(i) = omega_vec(2);
 
-    %solve for point velocity
+    %velocity analysis - solve for point velocity
     vB(:, i) = FindVel(v0, a, omega2, n2);
     vP(:, i) = FindVel(vB(:, i), p, omega3(i), n3);
+
+    %acceleration analysis - solve for alpha3 and b_doubledot
+    C_matrix = [b(i)*n3, e3];
+    d_vector = -a*alpha2*n2 + a*omega2^2*e2 - 2*bdot(i)*omega3(i)*n3 + b(i)*omega3(i)^2*e3;
+    alpha_vector = C_matrix\d_vector;
+    alpha3(i) = alpha_vector(1);
+    b_doubledot(i) = alpha_vector(2);
+
+    %acceleration analysis - find point acceleration
+    aB(:, i) = FindAcc(a0, a, omega2, alpha2, e2, n2);
+    aP(:, i) = FindAcc(aB(:, i), p, omega3(i), alpha3(i), e3, n3);
 end
 
-%loop to estimate omega 3 using numerical method
+%loop to estimate velocity and acceleration using numerical method
 %---purely just to validate result of analytical vs numerical method-----
+%velocity
 dt = 2*pi/((N-1)*omega2);
 omega3_estimate = FiniteDiffMethod(theta3, dt);
 bdot_estimate = FiniteDiffMethod(b, dt);
 vPx_estimate = FiniteDiffMethod(xP(1, :), dt);
+
+%acceleration
+aPx_estimate = FiniteDiffMethod(vP(1, :), dt);
 %-----------
 
 loop = true;
 
-fig = figure('Units','normalized','Position',[0.2 0.2 0.4 0.4]);
-layout = tiledlayout(2, 1);
+fig = figure('Units','normalized','Position',[0.2 0.1 0.35 0.8]);
+layout = tiledlayout(3, 1);
 nexttile
 grid on
 %plot path B and P
@@ -108,22 +132,23 @@ tP = text(xP(1, 1) - 0.015, xP(2, 1), 'P', HorizontalAlignment='center');
 
 %plot for velocity
 nexttile
-%plot(theta2*180/pi, omega3(1, :));
-%plot(theta2*180/pi, bdot(1, :));
 plot(theta2*180/pi, vP(1, :));
 xlabel('angle (degree)')
+xlim([0, 360]);
+set(gca, 'xtick', 0:60:360);
 
-%----lines below is for plotting estimated value from numerical method for
-%validating result. can be deleted
+%----lines below is for plotting estimated value from numerical method
 hold on
-%uncomment omega3_estimate or bdot_estimate if you want to see the plot
-%plot(theta2*180/pi, omega3_estimate(1, :));
-%plot(theta2*180/pi, bdot_estimate(1, :));
-plot(theta2*180/pi, vPx_estimate(1, :));
-
-%legend('omega3', 'omega3\_estimate')
-%legend('bdot', 'bdot\_estimate')
+plot(theta2*180/pi, vPx_estimate(1, :), '.');
 legend('vPx', 'vPx\_estimate')
+
+%--plot for acceleration
+nexttile
+plot(theta2*180/pi, aP(1, :));
+xlim([0, 360]);
+set(gca, 'xtick', 0:60:360);
+hold on
+plot(theta2*180/pi, aPx_estimate(1, :), '.');
 
 j = 1;
 while j <= N

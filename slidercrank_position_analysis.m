@@ -36,6 +36,11 @@ omega2 = 10;
 omega3 = zeros(1, N);
 ddot = zeros(1, N);
 
+% acceleration analysis
+alpha2 = 0;
+alpha3 = zeros(1, N);
+d_doubledot = zeros(1, N);
+
 for i=1:N
     theta2(i) = (i - 1) * 2 * pi / (N - 1);
     theta3(i) = asin((c - a * sin(theta2(i))) / b);
@@ -56,7 +61,18 @@ for i=1:N
     omega_vec = A_mat\b_vec;
     omega3(i) = omega_vec(1);
     ddot(i) = omega_vec(2);
+
+    % acceleration analysis
+    C_matrix = [b*n3, -e1];
+    d_vector = -a*alpha2*n2 + a*omega2^2*e2 + b*omega3(i)^2*e3;
+    alpha_vector = C_matrix\d_vector;
+    alpha3(i) = alpha_vector(1);
+    d_doubledot(i) = alpha_vector(2);
 end
+
+% validate result using numerical method
+timestep = 2*pi/((N-1)*omega2);
+d_doubledot_estimate = FiniteDiffMethod(ddot, timestep);
 
 %convert XB and xC into mm
 xB = xB * 1000;
@@ -67,6 +83,18 @@ d = d * 1000;
 fig1 = figure;
 fig2 = figure;
 fig3 = figure;
+fig4 = figure;
+
+%plot acceleration on fig4
+figure(fig4);
+plot(theta2*180/pi, d_doubledot);
+set(fig4, 'Position', [600, 100, 500, 300])
+xlim([0 360]);
+set(gca, 'xtick', 0:60:360);
+ylabel('Piston Acceleration')
+hold on
+plot(theta2*180/pi, d_doubledot_estimate, '.')
+
 %plot crank angle vs piston location on fig2
 figure(fig2);
 plot(theta2 * 180 / pi, d);
@@ -75,13 +103,13 @@ xlabel('Theta2 (degrees)');
 ylabel('Piston location (mm)');
 grid on
 set(gca, 'xtick', 0:60:360);
-set(fig2, 'Position', [50, 600, 600, 400])
+set(fig2, 'Position', [50, 500, 500, 300])
 xlim([0 360])
 
 %plot velocity vs angle
 figure(fig3);
 plot(theta2(1, :) * 180/pi, ddot(1, :));
-set(fig3, 'Position', [50, 100, 600, 400]);
+set(fig3, 'Position', [50, 100, 500, 300]);
 xlim([0 360]);
 grid on
 set(gca, 'xtick', 0:60:360);
@@ -91,7 +119,7 @@ title('Crank Angle vs Piston Velocity');
 
 %now explicitly call fig1 so we can start plotting on it
 figure(fig1);
-set(fig1, 'Position', [700, 400, 600, 400])
+set(fig1, 'Position', [600, 500, 500, 300])
 hold on;
 plot(xB(1, :), xB(2, :));
 plot(xC(1, :), xC(2, :));
@@ -114,7 +142,7 @@ h1 = plot([x0(1), xB(1,1), xC(1,1)], [x0(2), xB(2, 1), xC(2, 1)], LineWidth=1, C
 %initialise joint marker
 h2 = plot([x0(1), xB(1,1), xC(1,1)], [x0(2), xB(2, 1), xC(2, 1)], 'o', 'MarkerFaceColor','k', HandleVisibility='off');
 
-while j <= N;
+while j <= N
     %avoid erratic behaviour if we click X to close plot
     if ~ishandle(fig1)
         break
@@ -125,7 +153,7 @@ while j <= N;
     drawnow
 
     j = j + 1;
-    if loop == true & j >= N;
+    if loop == true & j >= N
         j = 1;
     end
 end

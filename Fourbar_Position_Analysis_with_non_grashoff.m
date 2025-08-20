@@ -102,6 +102,15 @@ v0 = [0; 0]; % velocity at crank pivot
 vB = zeros(2, N);
 vP = zeros(2, N);
 
+% acceleration analysis variables
+alpha2 = 0;
+alpha3 = zeros(1, N);
+alpha4 = zeros(1, N);
+
+a0 = [0; 0]; % acceleration at crank pivot
+aB = zeros(2, N);
+aP = zeros(2, N);
+
 % main loop
 for i = 1:N
     if ccw == true
@@ -186,27 +195,43 @@ for i = 1:N
     vB(:, i) = FindVel(v0, a, omega2, n2);
     vP(:, i) = FindVel(vB(:, i), p, omega3(i), nBP);
 
-    %%%-- finite diff method. purely for validation of velocity result-%%
-    timestep = 2*pi/((N-1)*omega2);
-    vPx_estimated = FiniteDiffMethod(xP(1, :), timestep);
-    vPy_estimated = FiniteDiffMethod(xP(2, :), timestep);
-    omega3_estimated = FiniteDiffMethod(theta3(1, :), timestep);
-    omega4_estimated = FiniteDiffMethod(theta4(1, :), timestep);
+    % acceleration analysis
+    C_matrix = [b*n3, -c*n4];
+    d_vector = -alpha2*a*n2 + omega2^2*a*e2 + omega3(i)^2*b*e3 - omega4(i)^2*c*e4;
+    alpha_matrix = C_matrix\d_vector;
+    alpha3(i) = alpha_matrix(1);
+    alpha4(i) = alpha_matrix(2);
 
+    %solve for point acceleration
+    aB(:, i) = FindAcc(a0, a, omega2, alpha2, e2, n2);
+    aP(:, i) = FindAcc(aB(:, i), p, omega3(i), alpha3(i), eBP, nBP);
 end
 
-% plot velocity
+%%%-- finite diff method. purely for validation of velocity result-%%
+timestep = 2*pi/((N-1)*omega2);
+vPx_estimated = FiniteDiffMethod(xP(1, :), timestep);
+vPy_estimated = FiniteDiffMethod(xP(2, :), timestep);
+omega3_estimated = FiniteDiffMethod(theta3(1, :), timestep);
+omega4_estimated = FiniteDiffMethod(theta4(1, :), timestep);
+
+% estimate acceleration with numerical method
+alpha3_estimate = FiniteDiffMethod(omega3, timestep);
+alpha4_estimate = FiniteDiffMethod(omega4, timestep);
+aPx_estimate = FiniteDiffMethod(vP(1, :), timestep);
+aPy_estimate = FiniteDiffMethod(vP(2, :), timestep);
+
+% plot position, vel or accel
 fig2 = figure;
 set(fig2, 'Position', [50, 200, 600, 400])
-
-% --plot below purely to validate the analytical result vs estimated
-% -- change the plot to omega3, omega4 or P as you wish
-plot(theta2*180/pi, vP(1, :));
-hold on
-plot(theta2*180/pi, vPx_estimated, '.');
-legend('analytical', 'estimated', 'Location','best');
+plot(theta2*180/pi, aP(2, :));
 xlim([0, 360]);
 set(gca, 'xtick', 0:60:360)
+
+% --plot below purely to validate the analytical result vs estimated
+% -- change the plot to omega3, omega4, alpha3, alpha4 or vP as you wish
+hold on
+plot(theta2*180/pi, aPy_estimate, '.');
+legend('analytical', 'estimated', 'Location','best');
 
 % plot path
 fig1 = figure;

@@ -58,6 +58,16 @@ v0 = [0; 0]; %velocity at crank pin
 vB = zeros(2, N); %velocity at point B
 vP = zeros(2, N); %velocity at point P
 
+% variables for acceleration analysis
+alpha2 = 0; %rad/s/s
+alpha5 = -N1/N2*alpha2;
+alpha3 = zeros(1, N);
+alpha4 = zeros(1, N);
+
+a0 = [0; 0]; %acceleration of crank pin A
+aB = zeros(2, N); %acceleration of pin B
+aP = zeros(2, N); %acceleration of pin P
+
 % main loop
 for i = 1:N 
      theta2(i) = (i - 1) * (2*pi) / (N - 1); 
@@ -105,26 +115,39 @@ for i = 1:N
      vB(:, i) = FindVel(v0, a, omega2, n2);
      vP(:, i) = FindVel(vB(:, i), p, omega3(i), nBP);
 
+     % acceleration analysis
+     C_matrix = [b*n3, -c*n4];
+     d_vector = -a*alpha2*n2 + a*omega2^2*e2 + b*omega3(i)^2*e3 - ...
+         c*omega4(i)^2*e4 +u*alpha5*n5 - u*omega5^2*e5;
+     alpha_matrix = C_matrix\d_vector;
+     alpha3(i) = alpha_matrix(1);
+     alpha4(i) = alpha_matrix(2);
+
+     aB(:, i) = FindAcc(a0, a, omega2, alpha2, e2, n2);
+     aP(:, i) = FindAcc(aB(:, i), p, omega3(i), alpha3(i), eBP, nBP);
 end
 
-%numerical estimation of velocity analysis
+%numerical estimation of velocity and acceleration
 timestep = 2*pi/((N-1)*omega2);
 vPx_estimate = FiniteDiffMethod(xP(1, :), timestep);
 vPy_estimate = FiniteDiffMethod(xP(2, :), timestep);
 
-%plot velocity analysis
+aPx_estimate = FiniteDiffMethod(vP(1, :), timestep);
+aPy_estimate = FiniteDiffMethod(vP(2, :), timestep);
+
+%plot velocity or acceleration
 fig2 = figure;
 set(fig2, 'Position', [50, 200, 600, 400]);
-plot(theta2*180/pi, vP(1, :));
+plot(theta2*180/pi, aP(1, :));
 hold on
-plot(theta2*180/pi, vP(2, :));
+plot(theta2*180/pi, aP(2, :));
 set(gca, 'xtick', 0:60:360);
 set(gca, 'ytick', -6:1:6);
 xlim([0, 360]);
 %plot the estimated value for validating result
-plot(theta2*180/pi, vPx_estimate, '.');
-plot(theta2*180/pi, vPy_estimate, '.');
-legend('vPx', 'vPy', 'vPx\_estimate', 'vPy\_estimate');
+plot(theta2*180/pi, aPx_estimate, '.');
+plot(theta2*180/pi, aPy_estimate, '.');
+legend('aPx', 'aPy', 'aPx\_estimate', 'aPy\_estimate', 'Location', 'best');
 
 % plot path
 fig1 = figure;

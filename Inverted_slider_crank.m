@@ -55,6 +55,14 @@ v0 = [0; 0]; %velocity of pin A
 vB = zeros(2, N);
 vP = zeros(2, N);
 
+%variable for acceleration analysis
+alpha2 = 0; %rad/s/s
+alpha3 = zeros(1, N);
+b_doubledot = zeros(1, N);
+a0 = [0; 0]; %acceleration of crank pin A
+aB = zeros(2, N);
+aP = zeros(2, N);
+
 % main loop
 for i = 1:N
     theta2(i) = (i - 1) * (theta2_max - theta2_min) / (N - 1) + theta2_min;
@@ -92,6 +100,18 @@ for i = 1:N
     vB(:, i) = FindVel(v0, a, omega2, n2);
     vP(:, i) = FindVel(vB(:, i), p, omega3(i), n3);
 
+    % acceleration analysis
+    C_matrix = [b(i)*n3-c*n4, e3];
+    d_vector = -a*alpha2*n2 + a*omega2^2*e2 - 2*bdot(i)*omega3(i)*n3 + ...
+    b(i)*omega3(i)^2*e3 - c*omega3(i)^2*e4;
+    alpha_vector = C_matrix\d_vector;
+    alpha3(i) = alpha_vector(1);
+    b_doubledot(i) = alpha_vector(2);
+
+    %calculate point acceleration
+    aB(:, i) = FindAcc(a0, a, omega2, alpha2, e2, n2);
+    aP(:, i) = FindAcc(aB(:, i), p, omega3(i), alpha3(i), e3, n3);
+
 end
 
 %--lines of code below are purely for validation of above point
@@ -100,17 +120,23 @@ timestep = 2*pi/((N-1)*omega2);
 vPx_estimated = FiniteDiffMethod(xP(1, :), timestep);
 vPy_estimated = FiniteDiffMethod(xP(2, :), timestep);
 
-% plot velocity
+%estimate alpha3 and d_doubledot with numerical method
+alpha3_estimate = FiniteDiffMethod(omega3, timestep);
+b_doubledot_estimate = FiniteDiffMethod(bdot, timestep);
+aPx_estimate = FiniteDiffMethod(vP(1, :), timestep);
+aPy_estimate = FiniteDiffMethod(vP(2, :), timestep);
+
+% plot velocity or acceleration
 fig2 = figure;
-plot(theta2*180/pi, vP(1, :));
+plot(theta2*180/pi, aP(1, :));
 hold on
+plot(theta2*180/pi, aP(2, :));
 %plot estimated value from finite difference
-plot(theta2*180/pi, vPx_estimated(1, :), '.');
+plot(theta2*180/pi, aPy_estimate, '.');
 xlim([0 360]);
 set(gca, 'xtick', 0:60:360)
 set(fig2, 'position', [50, 200, 600, 400])
 xlabel('crank angle (degree)');
-legend('vPx', 'vPx\_estimated')
 
 % plot path
 fig1 = figure;

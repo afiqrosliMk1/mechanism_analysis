@@ -118,12 +118,23 @@ omega6 = zeros(1, N);
 v0 = [0; 0]; %velocity of crank pin
 vB = zeros(2, N);
 vE = zeros(2, N);
+vG = zeros(2, N);
 
 % for estimated velocity
 omega3_estimated = zeros(1, N);
 omega4_estimated = zeros(1, N);
 omega5_estimated = zeros(1, N);
 omega6_estimated = zeros(1, N);
+
+% variables for acceleration analysis
+alpha2 = 0; %rad/s/s
+alpha3 = zeros(1, N);
+alpha4 = zeros(1, N);
+alpha5 = zeros(1, N);
+alpha6 = zeros(1, N);
+a0 = [0; 0]; %accelaration of crank pin A
+aE = zeros(2, N);
+aG = zeros(2, N);
 
 % main loop
 for i = 1:N
@@ -244,26 +255,49 @@ for i = 1:N
 
     vB(:, i) = FindVel(v0, a, omega2, n2);
     vE(:, i) = FindVel(v0, p, omega2, nAE);
+    vG(:, i) = FindVel(vE(:, i), u, omega5(i), n5);
 
+    % acceleration analysis
+    C_matrix = [b*n3, -c*n4, Z21, Z21;
+                Z21, -q*nDF, u*n5, -v*n6];
+    d_vector = [-a*alpha2*n2 + a*omega2^2*e2 + b*omega3(i)^2*e3 - c*omega4(i)^2*e4;
+                -p*alpha2*nAE + p*omega2^2*eAE + u*omega5(i)^2*e5 - v*omega6(i)^2*e6 - q*omega4(i)^2*eDF];
+    alpha_vector = C_matrix\d_vector;
+    alpha3(i) = alpha_vector(1);
+    alpha4(i) = alpha_vector(2);
+    alpha5(i) = alpha_vector(3);
+    alpha6(i) = alpha_vector(4);
+
+    % solve for point acceleration
+    aE(:, i) = FindAcc(a0, p, omega2, alpha2, eAE, nAE);
+    aG(:, i) = FindAcc(aE(:, i), u, omega5(i), alpha5(i), e5, n5);
 end
 
-% estimation of omega value using numerical method
+% estimation of omega, velocity and accel values using numerical method
 timestep = 2*pi/((N-1)*omega2);
 omega3_estimated = FiniteDiffMethod(theta3, timestep);
 omega4_estimated = FiniteDiffMethod(theta4, timestep);
 vEx_estimated = FiniteDiffMethod(xE(1, :), timestep);
 vEy_estimated = FiniteDiffMethod(xE(2, :), timestep);
+vGx_estimated = FiniteDiffMethod(xG(1, :), timestep);
+vGy_estimated = FiniteDiffMethod(xG(2, :), timestep);
+
+aGx_estimated = FiniteDiffMethod(vG(1, :), timestep);
+aGy_estimated = FiniteDiffMethod(vG(2, :), timestep);
 
 % plot velocity 
 fig2 = figure;
-plot(theta2*180/pi, vE(1, :));
+plot(theta2*180/pi, aG(1, :));
 hold on
-plot(theta2*180/pi, vEx_estimated, '.');
+plot(theta2*180/pi, aGx_estimated, '.');
+
+plot(theta2*180/pi, aG(2, :));
+plot(theta2*180/pi, aGy_estimated, '.');
 set(fig2, 'Position', [50, 200, 600, 400]);
 xlim([0 360]);
 set(gca, 'xtick', 0:60:360);
 xlabel('crank angle (degree)');
-legend('vE\git _x', 'vEx\_estimated');
+legend('analytical', 'estimated');
 
 %define linkage colour
 cBlu = DefineColor([0, 110, 199]);

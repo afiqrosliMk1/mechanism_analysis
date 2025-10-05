@@ -29,7 +29,13 @@ xQ = zeros(2, N); %point where door is pushed
 
 T = 2; %time it takes to open door
 lambda = 2*pi/T;
-delta_time = T/(N-1);
+
+% both delta time time can be used. if you use the first one, it will limit
+% maximum value of t such that, t(i=N) = T.
+
+%delta_time = T/(N-1);
+delta_time = 0.03;
+
 t = zeros(1, N);
 
 % velocity analysis
@@ -83,7 +89,9 @@ for i = 1:N
         omega2(i) = 0.25*lambda*(1 - cos(lambda*t(i)));
         alpha2(i) = 0.25*lambda^2*sin(lambda*t(i));
     elseif t(i) > T
-        fprintf("t exceeding specified period T. function to handle this not included yet\n");
+        theta2(i) = pi/2;
+        omega2(i) = 0;
+        alpha2(i) = 0;
     end
     
 
@@ -224,12 +232,14 @@ tQ = text(xQ(1, 1) - 0.015, xQ(2, 1), 'Q', HorizontalAlignment='center');
 nexttile
 plot(theta2*180/pi, vP(1, :));
 xlabel('angle (degree)')
+ylabel('velocity of point # (m/s)')
 xlim("auto");
 set(gca, 'xtick', 0:5:90);
 
 %----lines below is for plotting estimated value from numerical method
 hold on
 plot(theta2*180/pi, vPx_estimate(1, :), '.');
+xlabel('angle (degree)');
 legend('vPx', 'vPx\_estimate', 'Location', 'best');
 
 %--plot for acceleration
@@ -239,6 +249,8 @@ xlim("auto");
 set(gca, 'xtick', 0:5:90);
 hold on
 plot(theta2*180/pi, aPx_estimate(1, :), '.');
+xlabel('angle (degree)')
+ylabel('acceleration of point # (m/s^2)')
 legend('aPx', 'aPx\_estimate', 'Location', 'best');
 
 %plot for force
@@ -252,7 +264,7 @@ xlabel('time (s)');
 ylabel('Force (N)');
 legend('FQ_x', 'FQ_y', 'FQ');
 
-% plot for verify force result using energy method
+% % plot for verify force result using energy method
 fig2 = figure; 
 plot(t, P_Kin);
 hold on

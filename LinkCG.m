@@ -40,8 +40,16 @@ function [eAg, nAg, LAg, sgA, sgB, sgC] = LinkCG(a, c, gamma, xbar, theta)
     sgC_prime = [-rgC_prime(2); rgC_prime(1)];
 
     LAg = norm(rgA_prime);
-    eAg_prime = -(1/LAg)*rgA_prime;
-    nAg_prime = [-eAg_prime(2); eAg_prime(1)];
+    % handle situation where point coincide with center of mass, LAg = 0,
+    % so eAg points to nowhere [0; 0]. we use 1e-12 (very small number) 
+    % instead of zero to handle floating points rounding error.
+    if LAg < 1e-12
+        eAg_prime = [0; 0];
+        nAg_prime = [0; 0];
+    else
+        eAg_prime = -(1/LAg)*rgA_prime;
+        nAg_prime = [-eAg_prime(2); eAg_prime(1)];
+    end
 
     % Rotation matrix
     R = [cos(theta), -sin(theta); sin(theta), cos(theta)];

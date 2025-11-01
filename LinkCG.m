@@ -2,6 +2,11 @@
 % calculates the vectors associated with the center of mass of two or three
 % pin link
 %
+% **before using this function**
+% It is important to know where your origin is!
+% Turn back to the original vector you created when deriving theta equation
+% Eg: 4 bar linkage, origin of rocker is at pin D, not C!
+%
 % **inputs**
 % a = length of link from pin A to pin B
 % c = length of link from pin A to pin C (zero if two-pin link)
